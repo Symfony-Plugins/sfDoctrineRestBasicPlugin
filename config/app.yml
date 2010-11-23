@@ -1,0 +1,8 @@
+# default values
+all:
+  sfDoctrineRestBasic:    
+    logging_enabled: 0
+    request_log_prefix: "/tmp/sfDoctrineRestBasic_request_"
+    response_log_prefix: "/tmp/sfDoctrineRestBasic_response_"
+    exceptions_enabled: 1
+    exceptions_log_prefix: "/tmp/sfDoctrineRestBasic_exception_"

@@ -1,0 +1,198 @@
+# sfDoctrineRestBasicPlugin
+
+## Introduction
+
+This plugin is a very basic, but fully extendable REST webservice generator. Included features:
+
+  * output serialization: xml, json, jsonp, phpSerialized  
+  * jsonp tunneling: ability to tunnel put,post,delete calls through GET call for cross-domain
+  * request, response and exception logging
+  * hooks to check for api keys
+  * easily extensible 
+
+Essentially, this will create the necessary rest actions for your doctrine model: get, post, put, delete and head.
+
+## How to install
+
+  * go to your project's root
+
+  * Install the plugin:
+
+         ./symfony plugin:install http://plugins.symfony-project.com/sfDoctrineRestBasicPlugin
+
+
+  * clear the cache:
+
+         ./symfony cc
+
+
+  * alternatively, install this plugin from Subversion: [http://svn.symfony-project.com/plugins/sfDoctrineRestBasicPlugin](http://svn.symfony-project.com/plugins/sfDoctrineRestBasicPlugin)
+
+## Usage
+
+### module generation
+
+Generating a module is simple:
+
+       ./symfony generate:sfDoctrineRestBasicModule  APPLICATION MODULE MODEL [EXTENDS]
+
+
+This will generate a module in the application "APPLICATION", and
+this module will be configured to GET, PUT, POST, DELETE, HEAD.
+
+You can use "EXTENDS" to make the actions.class.php extend another class rather than sfDoctrineRestBasicActions.class.php. This way you will be able to easily override any of the methods without having to reuse code over and over again. Just put the class in your apps lib folder and make it extend sfDoctrineRestBasicActions.
+
+### Real world example
+
+Lets say you have a simple doctrine schema as such:
+
+              Blogpost:
+ 	          actAs:                      [ Timestampable ]
+ 	          columns: 	            
+ 	            created_by:               integer
+ 	            title:                    {type: string(128), notnull: true}
+ 	            summary:                  {type: string(255), notnull: true}
+ 	            body:                     clob
+
+sfDoctrineRestBasic will enable you to generate rest actions (get, put, post, delete, head) for this module with the following command:
+
+        ./symfony generate:sfDoctrineRestBasicModule  frontend blogpost Blogpost
+
+This creates the "blogpost" module in your "frontend" application using the doctinre model Blogpost. It also creates the routes that you'll need for the get, put, post, delete, head actions and methods.
+
+You can now test your newly created module:
+
+        http://127.0.0.1/blogpost
+
+#### Parameters
+
+The following parameters can be passed to the rest style actions:
+
+    serialize [xml,json, jsonp (needs callback param), php]:
+        http://127.0.0.1/blogpost/serialize/json -> returns data serialized as a json object. Default is xml.
+        Please note: currently json is the only acceptable for PUT, POST. If you try to pass it any other type you'll get a 400 bad request error.
+
+    callback: requires serialize jsonp 
+        When serialize=jsonp a callback is required that will wrap the json object.
+        http://127.0.0.1/blogpost/serialize/jsonp/callback/mycallback -> returns data serialized as a json object wrapped in a "callback" function.
+
+    method [get, post, put, delete, head]:
+        Useful when you need to tunnel through a GET method to circumvent cross-domain issues.
+        http://127.0.0.1/blogpost/2/serialize/jsonp/callback/mycallback/method/delete -> this will delete blogpost id 2, through the GET method.
+
+    data [json object via url]:
+        When using jsonp and a method to tunnel through a GET method data is passed via url param;
+        http://127.0.0.1/blogpost/2/serialize/jsonp/callback/mycallback/method/post/data/{"title":"This is my title update","created_by":"2","summary":"this is my summary updated"}
+        NOTE: make sure you escape your json object, usually JS framework (Jquery) will do this for you.
+
+    key: See API Key Auth in next section (currently not in use). I'd like to eventually set this up with sfGuardUser to validate user and permissions to rest webservice.
+
+## sfDoctrineRestBasicActions methods and fun
+
+### Override the GET
+
+By default the get returns everything, which could potentially be a problem. Below is an example of how to override the doctrine generated query in order to have finer control.
+
+Let's say that i don't want to show deleted records. i would override the buildDoctrineQueryGET() method in the newly created blogpost/action.class.php:
+
+        protected function buildDoctrineQueryGET()
+        {
+            $q = parent::buildDoctrineQueryGET();
+
+            $q->where('deleted_at IS NULL');
+
+            return $q;
+        }
+
+You can get more creative and even add paging if you would like or even alter the query to fetch related data.
+
+### Limit the HTTP methods
+
+Let's say i don't want users to delete anything using the rest call. I could easily prevent that by adding this class var in my blogpost/actions.class.php:
+
+        protected $availableMethods = array('GET', 'HEAD', 'PUT', 'POST');
+
+### Ignoring data on POST
+
+A lot of time users will post data that We don't want to update. For instance let's say that i'm using a doctrine timestampable plugin and messing with the created_at data would just be stupid. Override this method to ignore those keys:
+
+        //these are ignored by default
+        protected function setDbKeysIgnore()
+        {
+            $this->dbKeysIgnore = array(
+                'created_at'
+                , 'deleted_at'
+            );
+        }
+
+### Cleaning data on POST/PUT
+
+Override this method to remove (clean) keys from the post/put, similar to Ignoring:
+
+        protected function setKeysToBeCleaned()
+        {
+            $this->keysToBeCleaned = array(
+                'id'
+                , 'created_at'
+                , 'updated_at'
+                , 'deleted_at'
+            );
+        }
+
+### API Key Auth
+
+It's really important to hand out api keys for any webservice. This way you can track what users are doing. I've added hooks to do that by overriding this method:
+
+        protected function checkKey()
+        {
+            //check request key
+            $key = $this->getRequestParameter('key');
+
+            //check it with doctrine
+            blah blah blah...
+
+            throw new sfException('Webservice Key is invalid', 401);
+
+            OR
+
+            throw new sfException('Webservice Key is missing', 401);
+
+        }
+
+## Logging
+
+You can turn logging off and on but altering the following app.yml variables:
+
+   sfDoctrineRestBasic:
+    logging_enabled: 1
+    request_log_prefix: "/tmp/sfDoctrineRestBasic_request_"
+    response_log_prefix: "/tmp/sfDoctrineRestBasic_response_"
+    exceptions_enabled: 1
+    exceptions_log_prefix: "/tmp/sfDoctrineRestBasic_exception_"
+
+This can easily help you debug. By default logging is off
+
+## Security
+
+Make sure your webservice is secure:
+
+ * use SSL
+ * use HTTP auth,
+ * use keys, there is a method that can be overridden to help with this: checkKey()
+
+## Todo/Wish list
+
+ * clean up code and make sure everything is phpDocumented
+ * use sfGuardPlugin to handle user keys and credentials.
+ * handle doctrine relationships??
+
+## Contribute to the plugin, ask for help
+
+Please ask for help on how to use the plugin on symfony's users mailing list.
+You can also send me a mail directly : sean.villani@gmail.com.
+
+
+## License and credits
+
+This plugin has been developed by [Sean Villani](http://villani.ca/) and is
+licensed under the MIT license.
