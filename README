@@ -4,11 +4,11 @@
 
 This plugin is a very basic, but fully extendable REST webservice generator. Included features:
 
-  * output serialization: xml, json, jsonp, phpSerialized  
+  * output serialization: xml, json, jsonp, phpSerialized
   * jsonp tunneling: ability to tunnel put,post,delete calls through GET call for cross-domain
   * request, response and exception logging
   * hooks to check for api keys
-  * easily extensible 
+  * easily extensible
 
 Essentially, this will create the necessary rest actions for your doctrine model: get, post, put, delete and head.
 
@@ -48,7 +48,7 @@ Lets say you have a simple doctrine schema as such:
 
               Blogpost:
  	          actAs:                      [ Timestampable ]
- 	          columns: 	            
+ 	          columns:
  	            created_by:               integer
  	            title:                    {type: string(128), notnull: true}
  	            summary:                  {type: string(255), notnull: true}
@@ -72,7 +72,7 @@ The following parameters can be passed to the rest style actions:
         http://127.0.0.1/blogpost/serialize/json -> returns data serialized as a json object. Default is xml.
         Please note: currently json is the only acceptable for PUT, POST. If you try to pass it any other type you'll get a 400 bad request error.
 
-    callback: requires serialize jsonp 
+    callback: requires serialize jsonp
         When serialize=jsonp a callback is required that will wrap the json object.
         http://127.0.0.1/blogpost/serialize/jsonp/callback/mycallback -> returns data serialized as a json object wrapped in a "callback" function.
 
@@ -119,10 +119,12 @@ A lot of time users will post data that We don't want to update. For instance le
         //these are ignored by default
         protected function setDbKeysIgnore()
         {
-            $this->dbKeysIgnore = array(
-                'created_at'
-                , 'deleted_at'
-            );
+            //set default keys
+            parent::setDbKeysIgnore();
+
+            //add your keys
+            $this->dbKeysIgnore = array_merge($this->dbKeysIgnore, array('deleted_at'));
+
         }
 
 ### Cleaning data on POST/PUT
@@ -131,12 +133,12 @@ Override this method to remove (clean) keys from the post/put, similar to Ignori
 
         protected function setKeysToBeCleaned()
         {
-            $this->keysToBeCleaned = array(
-                'id'
-                , 'created_at'
-                , 'updated_at'
-                , 'deleted_at'
-            );
+            //set default keys
+            parent::setKeysToBeCleaned();
+
+            //add your keys
+            $this->keysToBeCleaned = array_merge($this->keysToBeCleaned, array('md5_key'));
+
         }
 
 ### API Key Auth
@@ -182,14 +184,14 @@ Make sure your webservice is secure:
 
 ## Todo/Wish list
 
- * clean up code and make sure everything is phpDocumented
+ * clean up code and make sure everything is document with phpDocs
  * use sfGuardPlugin to handle user keys and credentials.
  * handle doctrine relationships??
 
 ## Contribute to the plugin, ask for help
 
 Please ask for help on how to use the plugin on symfony's users mailing list.
-You can also send me a mail directly : sean.villani@gmail.com.
+You can also send me a mail directly : <<sean.villani at gmail dot com>>.
 
 
 ## License and credits

@@ -56,74 +56,61 @@ EOF;
         $routesArray = sfYaml::load($content);
 
         //REST routes
-        $routes = array(
-            'get' => array('id', 'main')
-            , 'head' => array('id', 'main')
-            , 'put' => array('main')
-            , 'post' => array('id')
-            , 'delete' => array('id')
-        );
-
-        foreach ($routes as $method => $routeType)
+//        $routes = array(
+//            'get' => array('id', 'main')
+//            , 'head' => array('id', 'main')
+//            , 'put' => array('main')
+//            , 'post' => array('id')
+//            , 'delete' => array('id')
+//        );
+        
+        if (!isset($routesArray[$module]))
         {
 
-            if (!isset($routesArray[$module . "_" . $method]))
-            {
-                // build main routes
-                if (in_array('main', $routeType))
-                {
-                    //echo "building main - $module - $method";
-                    $content = sprintf(<<<EOF
+            //echo "building main - $module - $method";
+            $content = sprintf(<<<EOF
 
 %s:
   url: /%s/*
-  class: sfRequestRoute
-  param: { module: %s, action: %s}
+  class: sfDoctrineRestBasicRoute
+  param: { module: %s}
   requirements:
-    sf_method: [%s]
+    sf_method: [get, head, put]
     
 EOF
-                                    , $module . "_" . $method
-                                    , $module
-                                    , $module
-                                    , $method
-                                    , $method
-                            ) . $content;
+                    , $module
+                    , $module
+                    , $module
+            ) . $content;
 
-                    $this->logSection('file+', $routing);
-                    file_put_contents($routing, $content);
-                }
-            }
+            $this->logSection('file+', $routing);
+            file_put_contents($routing, $content);
+        }
 
-            if (!isset($routesArray[$module . "_" . $method . "_id"]))
-            {
-                // build ID specific routes
-                if (in_array('id', $routeType))
-                {
-                    //echo "building id - $module - $method";
-                    $content = sprintf(<<<EOF
+        if (!isset($routesArray[$module . "_id"]))
+        {
+            // build ID specific routes
+            //echo "building id - $module - $method";
+            $content = sprintf(<<<EOF
 
 %s:
   url: /%s/:id/*
-  class: sfRequestRoute
-  param: { module: %s, action: %s}
+  class: sfDoctrineRestBasicRoute
+  param: { module: %s}
   requirements:
     id: \d+
-    sf_method: [%s]
+    sf_method: [get, head, post, delete]
 
 EOF
-                                    , $module . "_" . $method . "_id"
-                                    , $module
-                                    , $module
-                                    , $method
-                                    , $method
-                            ) . $content;
+                    , $module . "_id"
+                    , $module
+                    , $module
+            ) . $content;
 
-                    $this->logSection('file+', $routing);
-                    file_put_contents($routing, $content);
-                }
-            }
-        }
+            $this->logSection('file+', $routing);
+            file_put_contents($routing, $content);
+
+        }  
 
         return $this->generate($module, $model, $extends);
     }
