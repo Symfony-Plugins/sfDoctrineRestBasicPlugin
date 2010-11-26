@@ -1,7 +1,7 @@
 <?php
-class ArrayToXML
+class sfDoctrineRestBasicArrayToXML
 {
-    protected $tidy_config = array(
+    public $tidy_config = array(
         "doctype" => "omit",
         "logical-emphasis" => true,
         "show-body-only" => true,
@@ -28,12 +28,6 @@ class ArrayToXML
      */
     public function toXml($data, $rootNodeName = 'data', &$xml=null)
     {
-        // turn off compatibility mode as simple xml throws a wobbly if you don't.
-        if (ini_get('zend.ze1_compatibility_mode') == 1)
-        {
-            ini_set ('zend.ze1_compatibility_mode', 0);
-        }
-
         if (is_null($xml))
         {
             $xml = simplexml_load_string("<?xml version='1.0' encoding='utf-8'?><$rootNodeName />");

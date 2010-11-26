@@ -2,7 +2,7 @@
 /**
  * used to log request and response data
  */
-class Logger 
+class sfDoctrineRestBasicLogger
 {
     /**
      * Logs data in the text file

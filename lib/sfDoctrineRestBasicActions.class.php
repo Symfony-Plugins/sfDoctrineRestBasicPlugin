@@ -12,6 +12,36 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
 {
 
     /**
+     * array of values that the db should ignore on post and put method calls
+     *
+     * @var array
+     */
+    protected $dbKeysIgnore;
+
+    /**
+     * array of values that the should be cleaned from passed data on put/post
+     *
+     * @var array
+     */
+    protected $keysToBeCleaned;
+
+     /**
+     * defines all of the available rest methods for this specific module
+     *
+     * @var array
+     */
+    protected $availableMethods = array('GET', 'HEAD', 'POST', 'PUT', 'DELETE');
+
+    /**
+     * holds the module name which 90% of the time should be the name of the of the Doctrine object
+     * it's defined here so it can be overwritten
+     *
+     * @var string
+     */
+    protected $doctrineModelClassName;
+
+
+    /**
      * methodOverride
      *
      * checks to see if the method has been passed in the url to override the method
@@ -50,14 +80,7 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
             }
             
         }        
-    }
-
-    /**
-     * array of values that the db should ignore on post and put method calls
-     *
-     * @var array
-     */
-    protected $dbKeysIgnore;
+    }    
 
     /**
      * sets class var of keys that should be ignore on put/post
@@ -70,13 +93,6 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
             , 'deleted_at'
         );
     }
-
-    /**
-     * array of values that the should be cleaned from passed data on put/post
-     *
-     * @var array
-     */
-    protected $keysToBeCleaned;
 
     /**
      * sets class var of keys that should be removed from the incoming put/post data content
@@ -109,13 +125,6 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
 
         return $array;
     }
-
-    /**
-     * defines all of the available rest methods for this specific module
-     *
-     * @var array
-     */
-    protected $availableMethods = array('GET', 'HEAD', 'POST', 'PUT', 'DELETE');
 
     /**
      * checks available methods and allows or disallows access
@@ -156,14 +165,6 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
     }    
 
     /**
-     * holds the module name which 90% of the time should be the name of the of the Doctrine object
-     * it's defined here so it can be overwritten
-     *
-     * @var string
-     */
-    protected $doctrineModelClassName;
-
-    /**
      * sets the doctrine model class name to the module name if not specified
      */
     protected function setDoctrineModelClassName()
@@ -172,41 +173,7 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
         {
             $this->doctrineModelClassName = $this->getModuleName();
         }
-    }
-
-    /**
-     * hook to check md5 key or any other webservice key see example
-     * essentially just throw exception if key is missing or invalid
-     */
-    protected function checkKey()
-    {
-
-//        $key = $this->getRequestParameter('key');
-//
-//        $cacheKey = 'keys_'.$key;
-//
-//        if ($key)
-//        {
-//
-//            $q = Doctrine::getTable('Restaurants')
-//                    ->createQuery('id')
-//                    ->where('md5_key = ?', $key)
-//                    ->useResultCache(true, 3600, $cacheKey);
-//
-//            $rest = $q->execute();
-//
-//            $this->key = $rest[0]['id'];
-//
-//            if (!$this->key)
-//            {
-//                throw new sfException('Webservice Key is invalid', 401);
-//            }
-//        }
-//        else
-//        {
-//            throw new sfException('Webservice Key is missing', 401);
-//        }
-    }
+    }    
 
     /**
      * builds the get query can be overridden to exclude/include data
@@ -218,9 +185,7 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
         //query db
         $q = Doctrine_Query::create()
                         ->select('*')
-                        ->from($this->doctrineModelClassName);       
-
-        $q->orderBy('name');
+                        ->from($this->doctrineModelClassName);               
 
         return $q;
     }
@@ -328,7 +293,7 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
      * @param sfRequest $request A request object
      */
     public function executePost(sfWebRequest $request)
-    {
+    {        
         try
         {
             //checks request valid
@@ -423,7 +388,7 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
                 $e->fromArray((array)$data);
                 // this needs to be type cast
                 $e->updated_by = (int)$e->updated_by;
-                $e->save();
+                $e->save();                
 
                 if($e->id)
                 {
@@ -447,6 +412,7 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
         }
         catch (Exception $e)
         {
+            //print_r($e);exit;
             $this->handleException($e);
         }
 
@@ -506,7 +472,10 @@ class sfDoctrineRestBasicActions extends sfDoctrineRestBasic
         // required by symfony
         return sfView::NONE;
     }
+
+    public function executePut(sfWebRequest $request)
+    {        
+        $this->forward($this->getModuleName(), 'post');
+    }
     
 }
-
-?>

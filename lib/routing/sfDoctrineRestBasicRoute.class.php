@@ -26,4 +26,4 @@ class sfDoctrineRestBasicRoute extends sfRequestRoute  {
 
    
 }
-?>
+

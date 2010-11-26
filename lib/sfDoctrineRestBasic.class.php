@@ -7,6 +7,13 @@
 class sfDoctrineRestBasic extends sfActions
 {
     /**
+     * houses the logger class when instantiated
+     *
+     * @var obj
+     */
+    protected $logger;
+
+    /**
      * set up logging, check api key
      *
      * @see app.yml for config var
@@ -15,9 +22,9 @@ class sfDoctrineRestBasic extends sfActions
     {        
         if (sfConfig::get('app_sfDoctrineRestBasic_logging_enabled'))
         {
-            $logger = new Logger();
-            $log_data = $logger->getRequestLogData();
-            $logger->log($log_data, sfConfig::get('app_sfDoctrineRestBasic_request_log_prefix').date('Y-m-d').'.log');
+            $this->logger = new sfDoctrineRestBasicLogger();
+            $log_data = $this->logger->getRequestLogData();
+            $this->logger->log($log_data, sfConfig::get('app_sfDoctrineRestBasic_request_log_prefix').date('Y-m-d').'.log');
         }        
     }
 
@@ -29,10 +36,9 @@ class sfDoctrineRestBasic extends sfActions
     public function postExecute()
     {
         if (sfConfig::get('app_sfDoctrineRestBasic_logging_enabled'))
-        {
-            $logger = new Logger();
-            $log_data = array_merge($logger->getRequestLogData(), $logger->getResponseLogData());
-            $logger->log($log_data, sfConfig::get('app_sfDoctrineRestBasic_response_log_prefix').date('Y-m-d').'.log');
+        {            
+            $log_data = array_merge($this->logger->getRequestLogData(), $this->logger->getResponseLogData());
+            $this->logger->log($log_data, sfConfig::get('app_sfDoctrineRestBasic_response_log_prefix').date('Y-m-d').'.log');
         }
     }    
 
@@ -42,7 +48,8 @@ class sfDoctrineRestBasic extends sfActions
      */
     public function handleException($e)
     {
-        $code = (!$e->getCode()) ? 500 : $e->getCode();
+        $code = (!$e->getCode() || $e->getCode() > 500) ? 500 : $e->getCode();
+
 
         $this->getResponse()->setHttpHeader('Message', $e->getMessage());
         $this->getResponse()->setStatusCode($code);
@@ -53,10 +60,9 @@ class sfDoctrineRestBasic extends sfActions
         {
             if (sfConfig::get('app_sfDoctrineRestBasic_exceptions_enabled'))
             {
-                $logger = new Logger();                
-                
-                $log_data = array_merge($logger->getRequestLogData(), $logger->getResponseLogData());
-                $logger->log($log_data, sfConfig::get('app_sfDoctrineRestBasic_exceptions_log_prefix').date('Y-m-d').'.log');
+                $this->logger = (isset($this->logger)) ? $this->logger : new sfDoctrineRestBasicLogger();
+                $log_data = array_merge($this->logger->getRequestLogData(), $this->logger->getResponseLogData());
+                $this->logger->log($log_data, sfConfig::get('app_sfDoctrineRestBasic_exceptions_log_prefix').date('Y-m-d').'.log');
             }
         }
         
@@ -130,7 +136,7 @@ class sfDoctrineRestBasic extends sfActions
                 break;
 
             default:
-                $arr2xml = new ArrayToXML();
+                $arr2xml = new sfDoctrineRestBasicArrayToXML();
                 $data = array('data' => $data);
                 $return = $arr2xml->toXML($data, 'results');
         }
@@ -168,7 +174,41 @@ class sfDoctrineRestBasic extends sfActions
             $url = $_SERVER['SCRIPT_NAME'] . '/'.$mod . '/' .@$d[$id] . $qsParam;
             $d['href'] = array('link' => $url, 'name' => @$d[$name]);
         }
-    }    
+    }
+
+    /**
+     * hook to check md5 key or any other webservice key see example
+     * essentially just throw exception if key is missing or invalid
+     */
+    protected function checkKey()
+    {
+
+//        $key = $this->getRequestParameter('key');
+//
+//        $cacheKey = 'keys_'.$key;
+//
+//        if ($key)
+//        {
+//
+//            $q = Doctrine::getTable('Restaurants')
+//                    ->createQuery('id')
+//                    ->where('md5_key = ?', $key)
+//                    ->useResultCache(true, 3600, $cacheKey);
+//
+//            $rest = $q->execute();
+//
+//            $this->key = $rest[0]['id'];
+//
+//            if (!$this->key)
+//            {
+//                throw new sfException('Webservice Key is invalid', 401);
+//            }
+//        }
+//        else
+//        {
+//            throw new sfException('Webservice Key is missing', 401);
+//        }
+    }
 
 }
 

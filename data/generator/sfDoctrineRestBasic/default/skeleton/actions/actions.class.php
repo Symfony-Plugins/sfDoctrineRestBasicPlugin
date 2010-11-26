@@ -5,4 +5,4 @@ class %moduleName%Actions extends %baseActionsClass%
     protected $doctrineModelClassName = '%doctrineModelClassName%';
     
 }
-?>
+
